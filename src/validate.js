@@ -5,6 +5,10 @@ export function normalizeTags(tags) {
   return [...new Set(arr.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 20);
 }
 
+function toBool(v) {
+  return v === true || v === 1 || v === "true" || v === "1";
+}
+
 export function validateLink(input, { partial = false } = {}) {
   const errors = [];
   const out = {};
@@ -31,9 +35,13 @@ export function validateLink(input, { partial = false } = {}) {
   else if (!partial) out.tags = [];
 
   if (input.notes !== undefined) {
-    const notes = String(input.notes ?? "").slice(0, 2000);
-    out.notes = notes;
+    out.notes = String(input.notes ?? "").slice(0, 2000);
   } else if (!partial) out.notes = "";
+
+  for (const key of ["favorite", "archived"]) {
+    if (input[key] !== undefined) out[key] = toBool(input[key]);
+    else if (!partial) out[key] = false;
+  }
 
   return { ok: errors.length === 0, errors, value: out };
 }

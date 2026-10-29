@@ -23,6 +23,8 @@
       <p id="formError" class="error" hidden></p>
     </form>
     <section class="card">
+      <h2>Library</h2>
+      <div id="stats" class="muted">…</div>
       <h2>Tags</h2>
       <div id="tagList" class="tags"><span class="muted">No tags yet.</span></div>
       <div class="row">
@@ -32,6 +34,18 @@
     </section>
   </aside>
   <section class="feed">
+    <div class="toolbar">
+      <div class="views" role="tablist">
+        <button class="tag" data-view="all" aria-pressed="true">All</button>
+        <button class="tag" data-view="favorites" aria-pressed="false">★ Favorites</button>
+        <button class="tag" data-view="archived" aria-pressed="false">Archived</button>
+      </div>
+      <select id="sort" aria-label="Sort links">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="title">Title A–Z</option>
+      </select>
+    </div>
     <div id="count" class="muted"></div>
     <div id="cards" class="cards"></div>
   </section>

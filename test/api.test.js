@@ -50,3 +50,38 @@ test("POST invalid returns 400", async () => {
     server.close();
   }
 });
+
+test("POST duplicate URL returns 409, PATCH favorite, GET /api/stats", async () => {
+  const { server, base } = await start();
+  try {
+    const payload = { title: "Node", url: "https://nodejs.org", tags: ["dev"] };
+    await fetch(`${base}/api/links`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const dup = await fetch(`${base}/api/links`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    assert.equal(dup.status, 409);
+
+    const list = await (await fetch(`${base}/api/links`)).json();
+    const patched = await (await fetch(`${base}/api/links/${list[0].id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: true }),
+    })).json();
+    assert.equal(patched.favorite, true);
+
+    const favs = await (await fetch(`${base}/api/links?favorites=1`)).json();
+    assert.equal(favs.length, 1);
+
+    const s = await (await fetch(`${base}/api/stats`)).json();
+    assert.equal(s.total, 1);
+    assert.equal(s.favorites, 1);
+  } finally {
+    server.close();
+  }
+});

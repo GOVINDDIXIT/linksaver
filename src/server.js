@@ -10,7 +10,7 @@ import {
   deleteLink,
   tagCounts,
   loadLinks,
-  saveLinks,
+  stats,
 } from "./store.js";
 import { validateLink } from "./validate.js";
 
@@ -49,7 +49,10 @@ function readBody(req) {
     let buf = "";
     req.on("data", (c) => {
       buf += c;
-      if (buf.length > 1_000_000) reject(new Error("body too large"));
+      if (buf.length > 1_000_000) {
+        reject(new Error("body too large"));
+        req.destroy();
+      }
     });
     req.on("end", () => {
       if (!buf) return resolve({});
@@ -62,22 +65,34 @@ function readBody(req) {
   });
 }
 
+const flag = (v) => v === "1" || v === "true";
+
 export function createApp({ dataPath = defaultDataPath } = {}) {
   return createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://x");
       const { pathname } = url;
+      const qp = url.searchParams;
 
       if (!pathname.startsWith("/api/")) return servePublic(req, res);
 
       if (req.method === "GET" && pathname === "/api/links") {
+        const archived = qp.get("archived") ?? "hide";
         return send(res, 200, await listLinks(dataPath, {
-          q: url.searchParams.get("q") ?? "",
-          tag: url.searchParams.get("tag") ?? "",
+          q: qp.get("q") ?? "",
+          tag: qp.get("tag") ?? "",
+          sort: qp.get("sort") ?? "newest",
+          limit: qp.get("limit") ?? 100,
+          offset: qp.get("offset") ?? 0,
+          favoritesOnly: flag(qp.get("favorites")),
+          archived: ["hide", "only", "all"].includes(archived) ? archived : "hide",
         }));
       }
       if (req.method === "GET" && pathname === "/api/tags") {
         return send(res, 200, await tagCounts(dataPath));
+      }
+      if (req.method === "GET" && pathname === "/api/stats") {
+        return send(res, 200, await stats(dataPath));
       }
       if (req.method === "GET" && pathname === "/api/export") {
         return send(res, 200, await loadLinks(dataPath));
@@ -86,7 +101,7 @@ export function createApp({ dataPath = defaultDataPath } = {}) {
         const body = await readBody(req);
         const arr = Array.isArray(body) ? body : body.links;
         if (!Array.isArray(arr)) return send(res, 400, { error: "expected an array" });
-        let added = 0;
+        let added = 0, duplicates = 0;
         const errors = [];
         for (let i = 0; i < arr.slice(0, 500).length; i++) {
           const v = validateLink(arr[i]);
@@ -94,15 +109,18 @@ export function createApp({ dataPath = defaultDataPath } = {}) {
             errors.push({ index: i, errors: v.errors });
             continue;
           }
-          await createLink(dataPath, v.value);
-          added++;
+          const r = await createLink(dataPath, v.value);
+          if (r.duplicate) duplicates++;
+          else added++;
         }
-        return send(res, 200, { added, skipped: errors.length, errors: errors.slice(0, 10) });
+        return send(res, 200, { added, duplicates, skipped: errors.length, errors: errors.slice(0, 10) });
       }
       if (req.method === "POST" && pathname === "/api/links") {
         const v = validateLink(await readBody(req));
         if (!v.ok) return send(res, 400, { errors: v.errors });
-        return send(res, 201, await createLink(dataPath, v.value));
+        const r = await createLink(dataPath, v.value);
+        if (r.duplicate) return send(res, 409, { error: "link already saved", link: r.link });
+        return send(res, 201, r.link);
       }
 
       const m = pathname.match(/^\/api\/links\/([^/]+)$/);
