@@ -1,0 +1,16 @@
+{
+  "name": "linksaver",
+  "version": "0.1.0",
+  "description": "Save, tag, and search links — zero-dependency Node app with file-based store.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

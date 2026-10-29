@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LinkSaver</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">🔖 LinkSaver</div>
+  <div class="search"><input id="q" type="search" placeholder="Search title, URL, notes…" autocomplete="off" /></div>
+</header>
+<main class="layout">
+  <aside class="side">
+    <form id="form" class="card">
+      <h2>Save a link</h2>
+      <label>Title<input id="title" required maxlength="200" placeholder="Why is this worth keeping?" /></label>
+      <label>URL<input id="url" required inputmode="url" placeholder="https://…" /></label>
+      <label>Tags (comma separated)<input id="tags" placeholder="dev, ai, design" /></label>
+      <label>Notes<textarea id="notes" rows="3" maxlength="2000" placeholder="Optional context…"></textarea></label>
+      <button type="submit">Save link</button>
+      <p id="formError" class="error" hidden></p>
+    </form>
+    <section class="card">
+      <h2>Tags</h2>
+      <div id="tagList" class="tags"><span class="muted">No tags yet.</span></div>
+      <div class="row">
+        <button id="exportBtn" data-variant="outline" type="button">Export JSON</button>
+        <label class="import">Import<input id="importFile" type="file" accept="application/json" hidden /></label>
+      </div>
+    </section>
+  </aside>
+  <section class="feed">
+    <div id="count" class="muted"></div>
+    <div id="cards" class="cards"></div>
+  </section>
+</main>
+<script src="/app.js" type="module"></script>
+</body>
+</html>
